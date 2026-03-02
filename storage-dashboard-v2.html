@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storage Manager Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --surface2: #F9FAFB;
+  --border: #E5E9F0;
+  --text: #111827;
+  --muted: #6B7280;
+  --subtle: #9CA3AF;
+  --sidebar: #111827;
+  --sidebar-active: #1F2937;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --green: #059669;
+  --green-light: #ECFDF5;
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --purple: #7C3AED;
+  --purple-light: #F5F3FF;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.logo-area {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.logo {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+.logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; font-weight: 400; }
+
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  padding: 20px 20px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  border-radius: 0;
+  transition: all 0.15s;
+  position: relative;
+}
+.nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-item.active {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px; bottom: 6px;
+  width: 3px;
+  background: var(--blue);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { width: 18px; font-size: 14px; text-align: center; flex-shrink: 0; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.sidebar-user {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB, #7C3AED);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.user-name { font-size: 12px; font-weight: 600; color: #fff; }
+.user-role { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.breadcrumb { font-size: 13px; color: var(--muted); }
+.breadcrumb span { color: var(--text); font-weight: 600; }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.time-filter {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.time-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: none;
+  border: none;
+  transition: all 0.15s;
+}
+.time-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notif-btn {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  position: relative;
+}
+.notif-dot {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 7px; height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+}
+
+/* ── PAGE CONTENT ── */
+.content { padding: 28px 32px; flex: 1; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+.page-date { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+
+/* ── URGENT ACTION PANEL ── */
+.urgent-panel {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a1f36 100%);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.urgent-panel::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(37,99,235,0.25), transparent 70%);
+  pointer-events: none;
+}
+.urgent-icon-wrap {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.urgent-content { flex: 1; }
+.urgent-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.urgent-desc { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+.urgent-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-urgent-primary {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+}
+.btn-urgent-secondary {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+}
+
+/* ── KPI GRID ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.kpi-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.kpi-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; margin-bottom: 4px; }
+.kpi-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px; }
+.kpi-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.kpi-trend {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── MAIN GRID ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.card-body { padding: 22px 24px; }
+.card-header {
+  padding: 18px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.card-title { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+.card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.chart-wrap { height: 200px; padding: 0 24px 20px; }
+
+/* ── PRIORITY ACTIONS ── */
+.action-list { display: flex; flex-direction: column; gap: 0; }
+.action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.action-item:last-child { border-bottom: none; }
+.action-item:hover { background: var(--bg); }
+
+.action-priority {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.action-text { flex: 1; }
+.action-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.action-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.action-due { font-size: 10px; font-weight: 600; margin-top: 4px; }
+
+.action-arrow { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+/* ── BOTTOM GRID ── */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── STORAGE TYPE TABLE ── */
+.segment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.segment-row:last-child { border-bottom: none; }
+.segment-color { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.segment-info { flex: 1; }
+.segment-name { font-size: 13px; font-weight: 600; }
+.segment-desc { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.segment-right { text-align: right; }
+.segment-value { font-size: 13px; font-weight: 700; }
+.segment-growth { font-size: 10px; font-weight: 600; margin-top: 1px; }
+.segment-bar-wrap { margin: 0 24px 16px; }
+.segment-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.seg-label { font-size: 10px; color: var(--muted); width: 46px; flex-shrink: 0; font-weight: 600; }
+.seg-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; }
+.seg-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.seg-pct { font-size: 10px; color: var(--muted); width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ── CLOUD TRACKER ── */
+.cloud-stat-big {
+  text-align: center;
+  padding: 16px 24px 8px;
+}
+.cloud-number { font-size: 42px; font-weight: 800; letter-spacing: -1px; color: var(--amber); }
+.cloud-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.cloud-progress-wrap { padding: 0 24px; margin-bottom: 16px; }
+.cloud-bar-bg { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.cloud-bar-fill { height: 100%; background: linear-gradient(90deg, var(--amber), #FBBF24); border-radius: 5px; width: 41%; }
+.cloud-context { padding: 0 24px; }
+.cloud-context-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.cloud-context-row:last-child { border-bottom: none; }
+.cloud-ctx-label { color: var(--muted); }
+.cloud-ctx-value { font-weight: 700; }
+
+/* ── RISK RADAR ── */
+.risk-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.risk-item:last-child { border-bottom: none; }
+.risk-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.risk-info { flex: 1; }
+.risk-title { font-size: 12px; font-weight: 600; }
+.risk-detail { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.risk-level {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ── LEGEND ── */
+.legend { display: flex; gap: 14px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo">StorageCommand</div>
+    <div class="logo-sub">Manager Portal · Enterprise</div>
+  </div>
+
+  <div class="nav-section-label">Main</div>
+  <div class="nav-item active"><span class="nav-icon">⬛</span> Overview</div>
+  <div class="nav-item"><span class="nav-icon">📋</span> Action Items <span class="nav-badge">3</span></div>
+  <div class="nav-item"><span class="nav-icon">⚠️</span> Alerts <span class="nav-badge">2</span></div>
+
+  <div class="nav-section-label">Storage</div>
+  <div class="nav-item"><span class="nav-icon">🗄️</span> Block Storage</div>
+  <div class="nav-item"><span class="nav-icon">📁</span> File Storage</div>
+  <div class="nav-item"><span class="nav-icon">🪣</span> Object Storage</div>
+
+  <div class="nav-section-label">Planning</div>
+  <div class="nav-item"><span class="nav-icon">☁️</span> Cloud Migration</div>
+  <div class="nav-item"><span class="nav-icon">📊</span> Budget Tracker</div>
+  <div class="nav-item"><span class="nav-icon">📈</span> Market Trends</div>
+  <div class="nav-item"><span class="nav-icon">📄</span> Reports</div>
+
+  <div class="sidebar-user">
+    <div class="avatar">MG</div>
+    <div>
+      <div class="user-name">M. Garcia</div>
+      <div class="user-role">Storage Operations Manager</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">Dashboard / <span>Overview</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="time-filter">
+        <button class="time-btn">1Y</button>
+        <button class="time-btn active">3Y</button>
+        <button class="time-btn">5Y</button>
+        <button class="time-btn">All</button>
+      </div>
+      <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+      <button class="btn-primary">↓ Export Report</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Storage Overview</div>
+        <div class="page-date">Last updated: Monday, 2 March 2026 · Data through 2025 forecast</div>
+      </div>
+    </div>
+
+    <!-- URGENT ACTION BANNER -->
+    <div class="urgent-panel">
+      <div class="urgent-icon-wrap">⚡</div>
+      <div class="urgent-content">
+        <div class="urgent-title">Capacity Gap — Immediate Attention Required</div>
+        <div class="urgent-desc">Your data is growing 4× faster than your storage capacity is expanding (23% vs 19% annual growth). At the current rate, a storage deficit is projected within 12–18 months. Review vendor contracts and expand object storage allocation.</div>
+      </div>
+      <div class="urgent-actions">
+        <button class="btn-urgent-primary">Review Plan →</button>
+        <button class="btn-urgent-secondary">Dismiss</button>
+      </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
+
+      <!-- KPI 1 -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:#EFF6FF">📦</div>
+          <div class="kpi-status-badge" style="background:#EFF6FF;color:#2563EB">ON TRACK</div>
+        </div>
+        <div class="kpi-label">Total Market Size</div>
+        <div class="kpi-value" style="color:#111827">$37B</div>
+        <div class="kpi-desc">Enterprise storage market projected by end of 2025 across all segments</div>
+        <div class="kpi-trend" style="color:#059669">↑ Growing 5% per year — stable budget environment</div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:#ECFDF5">🪣</div>
+          <div class="kpi-status-badge" style="background:#ECFDF5;color:#059669">OPPORTUNITY</div>
+        </div>
+        <div class="kpi-label">Object Storage Growth</div>
+        <div class="kpi-value" style="color:#059669">+10%</div>
+        <div class="kpi-desc">Fastest growing segment — driven by AI/ML, unstructured data and cloud-native workloads</div>
+        <div class="kpi-trend" style="color:#059669">↑ Was growing at +28%/yr historically — now maturing at +10%</div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:#FFFBEB">☁️</div>
+          <div class="kpi-status-badge" style="background:#FFFBEB;color:#D97706">MONITOR</div>
+        </div>
+        <div class="kpi-label">Public Cloud Spend Share</div>
+        <div class="kpi-value" style="color:#D97706">41%</div>
+        <div class="kpi-desc">Of total IT storage budget now goes to public cloud — up from 36% in 2019</div>
+        <div class="kpi-trend" style="color:#D97706">↑ +4pp shift in 3 years — review on-prem contracts</div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:#FEF2F2">⚠️</div>
+          <div class="kpi-status-badge" style="background:#FEF2F2;color:#DC2626">ACTION NEEDED</div>
+        </div>
+        <div class="kpi-label">Capacity Gap Risk</div>
+        <div class="kpi-value" style="color:#DC2626">4pp</div>
+        <div class="kpi-desc">Data creation growing 23%/yr — storage capacity only expanding 19%/yr</div>
+        <div class="kpi-trend" style="color:#DC2626">↓ Gap is widening year-over-year without intervention</div>
+      </div>
+
+    </div>
+
+    <!-- MAIN GRID: chart + actions -->
+    <div class="main-grid">
+
+      <!-- CAPACITY GAP CHART -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Data Volume vs. Storage Capacity</div>
+            <div class="card-sub">Your data is outpacing your storage — the red gap is where risk lives</div>
+          </div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div>Data Created (ZB)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div>Storage Capacity (ZB)</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="gapChart"></canvas>
+        </div>
+      </div>
+
+      <!-- PRIORITY ACTION LIST -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Priority Actions</div>
+            <div class="card-sub">What needs your decision this week</div>
+          </div>
+        </div>
+        <div class="action-list">
+          <div class="action-item">
+            <div class="action-priority" style="background:#FEF2F2;color:#DC2626">1</div>
+            <div class="action-text">
+              <div class="action-title">Expand Object Storage Allocation</div>
+              <div class="action-desc">Current object storage is insufficient for projected AI/ML data demand by Q3 2025.</div>
+              <div class="action-due" style="color:#DC2626">⏰ Due: This week</div>
+            </div>
+            <div class="action-arrow">›</div>
+          </div>
+          <div class="action-item">
+            <div class="action-priority" style="background:#FFFBEB;color:#D97706">2</div>
+            <div class="action-text">
+              <div class="action-title">Review On-Prem Vendor Contracts</div>
+              <div class="action-desc">Public cloud share is rising — renegotiate or consolidate legacy on-prem agreements.</div>
+              <div class="action-due" style="color:#D97706">⏰ Due: This month</div>
+            </div>
+            <div class="action-arrow">›</div>
+          </div>
+          <div class="action-item">
+            <div class="action-priority" style="background:#EFF6FF;color:#2563EB">3</div>
+            <div class="action-text">
+              <div class="action-title">Shift File Storage Budget</div>
+              <div class="action-desc">File storage is declining (-2%/yr). Reallocate budget to object storage segment.</div>
+              <div class="action-due" style="color:#2563EB">⏰ Due: Q2 Planning</div>
+            </div>
+            <div class="action-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="bottom-grid">
+
+      <!-- STORAGE SEGMENT BREAKDOWN -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Storage Segment Health</div>
+            <div class="card-sub">Annual growth rate by storage type</div>
+          </div>
+        </div>
+        <div class="segment-bar-wrap">
+          <div class="segment-bar-row">
+            <div class="seg-label">Block</div>
+            <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:57%;background:#2563EB"></div></div>
+            <div class="seg-pct">+3%</div>
+          </div>
+          <div class="segment-bar-row">
+            <div class="seg-label">File</div>
+            <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:12%;background:#DC2626"></div></div>
+            <div class="seg-pct" style="color:#DC2626">-2%</div>
+          </div>
+          <div class="segment-bar-row">
+            <div class="seg-label">Object</div>
+            <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:100%;background:#059669"></div></div>
+            <div class="seg-pct" style="color:#059669">+10%</div>
+          </div>
+        </div>
+        <div class="segment-row">
+          <div class="segment-color" style="background:#2563EB"></div>
+          <div class="segment-info">
+            <div class="segment-name">Block Storage</div>
+            <div class="segment-desc">Primary workloads · Maturing</div>
+          </div>
+          <div class="segment-right">
+            <div class="segment-value">$21.2B</div>
+            <div class="segment-growth" style="color:#D97706">Slowing ↘</div>
+          </div>
+        </div>
+        <div class="segment-row">
+          <div class="segment-color" style="background:#DC2626"></div>
+          <div class="segment-info">
+            <div class="segment-name">File Storage</div>
+            <div class="segment-desc">Traditional · Declining</div>
+          </div>
+          <div class="segment-right">
+            <div class="segment-value">$11.2B</div>
+            <div class="segment-growth" style="color:#DC2626">Declining ↓</div>
+          </div>
+        </div>
+        <div class="segment-row">
+          <div class="segment-color" style="background:#059669"></div>
+          <div class="segment-info">
+            <div class="segment-name">Object Storage</div>
+            <div class="segment-desc">AI/ML + Cloud · Fastest growing</div>
+          </div>
+          <div class="segment-right">
+            <div class="segment-value">$4.5B</div>
+            <div class="segment-growth" style="color:#059669">Growing ↑</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBLIC CLOUD TRACKER -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cloud Adoption Tracker</div>
+            <div class="card-sub">Public cloud share of IT storage spend</div>
+          </div>
+        </div>
+        <div class="cloud-stat-big">
+          <div class="cloud-number">41%</div>
+          <div class="cloud-label">of storage budget is now public cloud</div>
+        </div>
+        <div class="cloud-progress-wrap" style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">
+            <span>On-Prem / Private Cloud</span>
+            <span>Public Cloud</span>
+          </div>
+          <div class="cloud-bar-bg"><div class="cloud-bar-fill"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
+            <span>59%</span>
+            <span>41%</span>
+          </div>
+        </div>
+        <div class="cloud-context">
+          <div class="cloud-context-row">
+            <span class="cloud-ctx-label">2019 Baseline</span>
+            <span class="cloud-ctx-value">36%</span>
+          </div>
+          <div class="cloud-context-row">
+            <span class="cloud-ctx-label">2022 Current</span>
+            <span class="cloud-ctx-value" style="color:var(--amber)">41%</span>
+          </div>
+          <div class="cloud-context-row">
+            <span class="cloud-ctx-label">3-Year Change</span>
+            <span class="cloud-ctx-value" style="color:var(--amber)">+5pp ↑</span>
+          </div>
+          <div class="cloud-context-row">
+            <span class="cloud-ctx-label">Why it matters</span>
+            <span class="cloud-ctx-value" style="font-size:10px;font-weight:500;color:var(--muted)">Review on-prem deals</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RISK RADAR -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Risk Radar</div>
+            <div class="card-sub">Operational risks requiring manager attention</div>
+          </div>
+        </div>
+        <div class="action-list">
+          <div class="risk-item">
+            <div class="risk-dot" style="background:#DC2626"></div>
+            <div class="risk-info">
+              <div class="risk-title">Storage Capacity Shortfall</div>
+              <div class="risk-detail">23% data growth vs 19% capacity — deficit likely by 2025</div>
+            </div>
+            <div class="risk-level" style="background:#FEF2F2;color:#DC2626">HIGH</div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-dot" style="background:#D97706"></div>
+            <div class="risk-info">
+              <div class="risk-title">File Storage Over-Investment</div>
+              <div class="risk-detail">File segment declining at -2%/yr while budget remains static</div>
+            </div>
+            <div class="risk-level" style="background:#FFFBEB;color:#D97706">MED</div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-dot" style="background:#D97706"></div>
+            <div class="risk-info">
+              <div class="risk-title">On-Prem Contract Lock-in</div>
+              <div class="risk-detail">Cloud adoption rising but existing on-prem contracts may limit agility</div>
+            </div>
+            <div class="risk-level" style="background:#FFFBEB;color:#D97706">MED</div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-dot" style="background:#059669"></div>
+            <div class="risk-info">
+              <div class="risk-title">Object Storage Under-Allocated</div>
+              <div class="risk-detail">Fastest growing segment but still smallest share of budget</div>
+            </div>
+            <div class="risk-level" style="background:#ECFDF5;color:#059669">LOW</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END BOTTOM GRID -->
+
+    <!-- MARKET TREND CHART -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Market Growth by Storage Type — 2016 to 2025</div>
+          <div class="card-sub">Total addressable market in USD billions · Shaded area = forecast period</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div>Block</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div>File</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Object</div>
+        </div>
+      </div>
+      <div style="height:200px;padding:0 24px 20px">
+        <canvas id="marketChart"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── GAP CHART ──
+new Chart(document.getElementById('gapChart'), {
+  type: 'line',
+  data: {
+    labels: ['2020','2021','2022','2023','2024','2025'],
+    datasets: [
+      {
+        label: 'Data Created (ZB)',
+        data: [64, 79, 97, 120, 147, 181],
+        borderColor: '#DC2626',
+        backgroundColor: 'rgba(220,38,38,0.07)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#DC2626',
+        pointRadius: 4,
+        tension: 0.35,
+        fill: true,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Storage Capacity (ZB)',
+        data: [7, 8, 9.3, 10.8, 12.7, 16],
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.07)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#2563EB',
+        pointRadius: 4,
+        tension: 0.35,
+        fill: true,
+        yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#fff',
+        borderColor: '#E5E9F0',
+        borderWidth: 1,
+        titleColor: '#111827',
+        bodyColor: '#6B7280',
+        padding: 10,
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} ZB` }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#9CA3AF', font: { size: 10, family: 'Plus Jakarta Sans' } } },
+      y: {
+        position: 'left',
+        grid: { color: 'rgba(0,0,0,0.04)' },
+        ticks: { color: '#DC2626', font: { size: 10, family: 'Plus Jakarta Sans' }, callback: v => `${v} ZB` }
+      },
+      y2: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { color: '#2563EB', font: { size: 10, family: 'Plus Jakarta Sans' }, callback: v => `${v} ZB` }
+      }
+    }
+  }
+});
+
+// ── MARKET CHART ──
+new Chart(document.getElementById('marketChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'],
+    datasets: [
+      {
+        label: 'Block',
+        data: [16.0, 17.6, 18.0, 16.9, 16.4, 19.8, 20.5, 21.0, 21.2, 21.2],
+        backgroundColor: (ctx) => ctx.dataIndex >= 5 ? 'rgba(37,99,235,0.5)' : '#2563EB',
+        borderRadius: 3,
+        stack: 's'
+      },
+      {
+        label: 'File',
+        data: [7.1, 7.8, 9.8, 9.6, 9.3, 10.4, 10.8, 11.1, 11.2, 11.2],
+        backgroundColor: (ctx) => ctx.dataIndex >= 5 ? 'rgba(124,58,237,0.45)' : '#7C3AED',
+        borderRadius: 3,
+        stack: 's'
+      },
+      {
+        label: 'Object',
+        data: [1.0, 1.3, 1.9, 2.6, 2.8, 3.4, 3.8, 4.2, 4.5, 4.5],
+        backgroundColor: (ctx) => ctx.dataIndex >= 5 ? 'rgba(5,150,105,0.45)' : '#059669',
+        borderRadius: 3,
+        stack: 's'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#fff',
+        borderColor: '#E5E9F0',
+        borderWidth: 1,
+        titleColor: '#111827',
+        bodyColor: '#6B7280',
+        padding: 10,
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y}B` }
+      }
+    },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 10, family: 'Plus Jakarta Sans' } } },
+      y: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#9CA3AF', font: { size: 10, family: 'Plus Jakarta Sans' }, callback: v => `$${v}B` } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
